@@ -20,12 +20,12 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-import {StreamSplitter, ISuperToken, IConstantFlowAgreementV1, ISuperfluid} from "./StreamSplitter.sol";
+import {RepaymentStream, ISuperToken, IConstantFlowAgreementV1, ISuperfluid} from "./RepaymentStream.sol";
 
 
-contract LoanRepaymentManager is Ownable, StreamSplitter {
+contract LoanRepaymentManager is Ownable, RepaymentStream {
 
-    // // arrays tracking all of the borrower/lender pairs 
+    // // arrays tracking all of the borrower/lender pairs ?
     // // and the terms of their loans
     // address payable[] public lender;
     // address payable[] public borrower;
@@ -37,14 +37,18 @@ contract LoanRepaymentManager is Ownable, StreamSplitter {
 
     
     constructor (
-        uint _loanRepaymentPercent, 
-        uint _maxRemittance,
-        address payable _lender, 
+        address payable borrower,
+        address payable lender, 
+        int96 loanRepaymentPercent, 
+        uint loanRepaymentAmount,
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
-        ISuperToken acceptedToken
-    ) StreamSplitter(
-        _lender, 
+        ISuperToken acceptedToken  // xEth, xDai, etc
+    ) RepaymentStream(
+        borrower,
+        lender, 
+        loanRepaymentPercent,
+        loanRepaymentAmount,
         host,
         cfa,
         acceptedToken
