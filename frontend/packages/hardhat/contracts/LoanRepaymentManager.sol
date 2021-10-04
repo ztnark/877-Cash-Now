@@ -24,17 +24,6 @@ import {RepaymentStream, ISuperToken, IConstantFlowAgreementV1, ISuperfluid} fro
 
 
 contract LoanRepaymentManager is Ownable, RepaymentStream {
-
-    // // arrays tracking all of the borrower/lender pairs ?
-    // // and the terms of their loans
-    // address payable[] public lender;
-    // address payable[] public borrower;
-    // address[] incomeSource;
-
-    // uint[] public loanRepaymentPercent;
-    // uint[] public maxRemittance;
-    // uint[] public totalRemitted = 0;
-
     
     constructor (
         address payable borrower,
@@ -53,7 +42,7 @@ contract LoanRepaymentManager is Ownable, RepaymentStream {
         cfa,
         acceptedToken
     ) {
-        // TODO register this loan in LoanRepaymentRegistry
+        // TODO register this manager in LoanRepaymentRegistry
 
         // in the life of this contract, the borrow and lender are fixed.
         // new loan = new contract.
