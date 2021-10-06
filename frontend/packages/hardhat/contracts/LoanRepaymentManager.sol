@@ -1,34 +1,20 @@
-/*
-1) Borrower B registers their income source I with the Manager M (i.e., points the I stream at M).
-2) B opens a sublime pool, listing M as the recipient.
-2) B sets the repayment terms with M.
-3) Lender L peruses the dashboard of pending pools and sees that B has income I, which will
-   automatically repay per the repayment terms.
-4) L deposits the money in M.
-5) A portion of all payments from I will be remitted to L until the loan amount is repaid.*
-
-so M becomes a globally recognized income sink which can be easily configured for loan repayment
-
-
-* At mininum this could just be a fixed amount set on M. But we could also leverage sublime contracts to check what 
-the remaining balance of the loan is. we can mock out a sublime pool contract with a "balance remaining" function.
-*/
-
+// SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol"; 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 import {RepaymentStream, ISuperToken, IConstantFlowAgreementV1, ISuperfluid} from "./RepaymentStream.sol";
 
-
-contract LoanRepaymentManager is Ownable, RepaymentStream {
+contract LoanRepaymentManager is RepaymentStream {
+    
+    /*
+    E.g., args for repaying a 10 cent loan, 35% repayment, ropsten, James' test accounts
+    0x5cF1836B7434775e1871970a7C242f22fA725F9F,0xffCD6F30Dd8C67C4696Ede6E1021a493cEc50f94,35,100000000000000000,0xF2B4E81ba39F5215Db2e05B2F66f482BB8e87FD2,0xaD2F1f7cd663f6a15742675f975CcBD42bb23a88,0xBF6201a6c48B56d8577eDD079b84716BB4918E8A
+    */
     
     constructor (
         address payable borrower,
         address payable lender, 
-        int96 loanRepaymentPercent, 
+        int8 loanRepaymentPercent, 
         uint loanRepaymentAmount,
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
