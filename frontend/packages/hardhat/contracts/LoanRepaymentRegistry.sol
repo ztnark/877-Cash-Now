@@ -1,32 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
-/*
-Whenever somebody deploys a loan repayment,
-They will be listed in this registry so we can see 
-in our marketplace that this person has set up repayment to a given pool.
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
-Eg.,:
-
-See all the repayments for a given borrower
-See if a given sublime lending pool is the recipient of automatic repayment
-See if any of an addresse's incoming streams are set up for automatic repayment
-
-For simplicity we'll set up a mapping for both borrower and lender.
-In a production env we'd probably want to invert control
-and have the registrar deploy proxies. Otherwise there isn't really a way
-to enforce access control on who can "register" in this control AFAIK.
-*/
+import {RepaymentStream, ISuperToken, IConstantFlowAgreementV1, ISuperfluid } from "./RepaymentStream.sol";
 
 contract LoanRepaymentRegistry {
-    // We map a borrower to all the repaymen
     mapping(address => address[]) public borrowerContracts;
     mapping(address => address[]) public lenderContracts;
+    
+    address[] public allContracts;
 
-    constructor() {}
+    address immutable implementation;
 
-    function register (address _borrower, address _lender) public {
-        borrowerContracts[_borrower].push(msg.sender);
-        lenderContracts[_lender].push(msg.sender);
+    // Goerli
+    // ISuperfluid private _host = "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9"; // host
+    // IConstantFlowAgreementV1 private _cfa = "0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8"; // the stored constant flow agreement class address
+    // ISuperToken private _acceptedToken = "0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00"; // accepted token
+
+
+    constructor() public {
+        implementation = address(
+            new RepaymentStream()
+        );
+    }
+
+    function register (address _stream, address _borrower, address _lender) internal {
+        borrowerContracts[_borrower].push(_stream);
+        lenderContracts[_lender].push(_stream);
+        allContracts.push(_stream);
+    }
+
+    function createRepaymentStream(
+        address payable borrower,
+        address payable lender, 
+        int8 loanRepaymentPercent, 
+        uint loanRepaymentAmount        
+    ) external returns (address) {
+        address clone = Clones.clone(implementation);
+        RepaymentStream(clone).initialize(
+            borrower, 
+            lender, 
+            loanRepaymentPercent, 
+            loanRepaymentAmount, 
+            ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9), 
+            IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8), 
+            ISuperToken(0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00)
+            // "0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9", // host
+            // "0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8", // CFAv1
+            // "0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00" // goerli fdaiX
+        );
+
+        register(clone, borrower, lender);
+    }
+
+    
+    function getContractsForBorrower(address borrower) external view returns( address [] memory){
+        return borrowerContracts[borrower];
+    }
+
+    function getContractsForLender(address lender) external view returns( address [] memory){
+        return lenderContracts[lender];
+    }
+
+    function getAllContracts() external view returns( address [] memory){
+        return allContracts;
     }
 }

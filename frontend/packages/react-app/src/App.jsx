@@ -20,7 +20,7 @@ const SuperfluidSDK = require("@superfluid-finance/js-sdk");
 
 const DEBUG = false;
 // Where you're deployed, e.g., localhost, MATIC, Mumbai testnet
-const targetNetwork = NETWORKS.ropsten;
+const targetNetwork = NETWORKS.goerli;
 // 🔭 block explorer URL
 const blockExplorer = targetNetwork.blockExplorer;
 
@@ -218,7 +218,8 @@ function App(props) {
             <ExampleUI
               address={address}
               mainnetProvider={mainnetProvider}
-              localProvider={readOnlyProvider}
+              readProvider={readOnlyProvider}
+              writeProvider={injectedProvider}
               yourLocalBalance={yourLocalBalance}
               price={price}
               tx={transactor}

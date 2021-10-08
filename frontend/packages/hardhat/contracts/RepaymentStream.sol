@@ -18,9 +18,10 @@ import {
 } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 
 
-contract RepaymentStream is SuperAppBase {
+contract RepaymentStream is Initializable, SuperAppBase {
 
     address public _lender;
     address public _borrower;
@@ -34,6 +35,10 @@ contract RepaymentStream is SuperAppBase {
     ISuperToken private _acceptedToken; // accepted token
 
     constructor(
+    ) {
+    }
+
+    function initialize(
         address borrower,
         address lender,
         int8 repaymentPercent,
@@ -41,7 +46,7 @@ contract RepaymentStream is SuperAppBase {
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
         ISuperToken acceptedToken
-    ) {
+    ) public {
         require(repaymentPercent >= 1 && repaymentPercent <= 100);
         require(address(borrower) != address(lender));
 
@@ -68,10 +73,9 @@ contract RepaymentStream is SuperAppBase {
             SuperAppDefinitions.BEFORE_AGREEMENT_CREATED_NOOP |
             SuperAppDefinitions.BEFORE_AGREEMENT_UPDATED_NOOP |
             SuperAppDefinitions.BEFORE_AGREEMENT_TERMINATED_NOOP;
-
-        _host.registerApp(configWord);
+        
+        _host.registerAppByFactory(this, configWord);
     }
-
 
     /**************************************************************************
      * Redirect Logic
