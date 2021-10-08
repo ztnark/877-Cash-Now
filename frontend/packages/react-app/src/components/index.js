@@ -14,3 +14,4 @@ export { default as Swap } from "./Swap";
 export { default as Timeline } from "./Timeline";
 export { default as TokenBalance } from "./TokenBalance";
 export { default as Wallet } from "./Wallet";
+export { default as LoanRepaymentDetail } from "./LoanRepaymentDetail";

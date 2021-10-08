@@ -1,5 +1,3 @@
-/* eslint-disable import/no-dynamic-require */
-/* eslint-disable global-require */
 import { Contract } from "@ethersproject/contracts";
 import { useState, useEffect } from "react";
 
@@ -22,6 +20,7 @@ export default function useCustomContractLoader(provider, contractName, address)
             signer = provider;
           }
 
+          // this is outdated with the way scaffold-eth deploys abis.. needed to add abi manually
           const customContract = new Contract(address, require(`../contracts/${contractName}.abi.js`), signer);
           try {
             customContract.bytecode = require(`../contracts/${contractName}.bytecode.js`);

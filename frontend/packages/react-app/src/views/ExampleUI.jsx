@@ -1,7 +1,7 @@
 import { utils } from "ethers";
 import { Button, Divider, Input, InputNumber } from "antd";
 import React, { useState, useEffect } from "react";
-import { Address, Balance, AddressInput } from "../components";
+import { Address, Balance, AddressInput ,LoanRepaymentDetail } from "../components";
 
 import { useContractReader, useContractLoader } from "../hooks";
 
@@ -50,7 +50,6 @@ export default function ExampleUI({
   return (
     <div>
       <div style={{ border: "1px solid #cccccc", padding: 16, width: "80%", margin: "auto", marginTop: 64 }}>
-        <h2>Example UI:</h2>
         <Divider />
         { userDetails?.cfa ? 
         <div style={{ margin: 8 }}>
@@ -77,9 +76,16 @@ export default function ExampleUI({
         <Divider />
         <h3>Registered Flows</h3>
         {
-          allRegisteredContracts?.map((cont) => {
+          allRegisteredContracts?.map((cont, i) => {
             return (
-              <div> SF Addr: {cont} </div>
+              <LoanRepaymentDetail 
+                key={i} 
+                contractAddress={cont} 
+                tx={tx}
+                readProvider={readProvider}
+                writeProvider={writeProvider}
+                readContracts={readContracts}
+              />
             )
           })
         }

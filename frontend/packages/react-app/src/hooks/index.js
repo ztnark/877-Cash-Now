@@ -13,3 +13,4 @@ export { default as useOnBlock } from "./OnBlock";
 export { default as usePoller } from "./Poller";
 export { default as useResolveName } from "./ResolveName";
 export { default as useTokenList } from "./TokenList";
+export { default as useCustomContractLoader } from "./CustomContractLoader";
