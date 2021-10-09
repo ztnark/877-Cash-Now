@@ -11,7 +11,7 @@ import { Account, Header } from "./components";
 import { INFURA_ID, NETWORK, NETWORKS } from "./constants";
 import { Transactor } from "./helpers";
 import { useBalance, useContractLoader, useExchangePrice, useGasPrice } from "./hooks";
-import { ExampleUI } from "./views";
+import { Dashboard } from "./views";
 
 const { ethers } = require("ethers");
 
@@ -109,7 +109,6 @@ function App(props) {
                         blockExplorerUrls: [targetNetwork.blockExplorer],
                       },
                     ];
-                    console.log("data", data);
                     const tx = await ethereum.request({ method: "wallet_addEthereumChain", params: data }).catch();
                     if (tx) {
                       console.log(tx);
@@ -208,14 +207,14 @@ function App(props) {
               }}
               to="/"
             >
-              Main
+              Dashboard
             </Link>
           </Menu.Item>
         </Menu>
 
         <Switch>
           <Route exact path="/">
-            <ExampleUI
+            <Dashboard
               address={address}
               mainnetProvider={mainnetProvider}
               readProvider={readOnlyProvider}

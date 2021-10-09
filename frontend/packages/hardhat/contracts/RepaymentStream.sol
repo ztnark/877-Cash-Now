@@ -26,6 +26,8 @@ contract RepaymentStream is Initializable, SuperAppBase {
     address public _lender;
     address public _borrower;
 
+    bool public _repaid = false;
+
     int8 public _repaymentPercent;
     uint public _repaymentAmount;
     // uint private _totalRepaid;
@@ -40,28 +42,28 @@ contract RepaymentStream is Initializable, SuperAppBase {
 
     function initialize(
         address borrower,
-        address lender,
-        int8 repaymentPercent,
-        uint repaymentAmount,
+        // address lender,
+        // int8 repaymentPercent,
+        // uint repaymentAmount,
         ISuperfluid host,
         IConstantFlowAgreementV1 cfa,
         ISuperToken acceptedToken
     ) public {
-        require(repaymentPercent >= 1 && repaymentPercent <= 100);
-        require(address(borrower) != address(lender));
+        // require(repaymentPercent >= 1 && repaymentPercent <= 100);
+        // require(address(borrower) != address(lender));
 
         assert(address(host) != address(0));
         assert(address(cfa) != address(0));
         assert(address(acceptedToken) != address(0));
-        assert(address(lender) != address(0));
+        // assert(address(lender) != address(0));
         assert(address(borrower) != address(0));
 
         //assert(!_host.isApp(ISuperApp(lender)));
 
         _borrower = borrower;
-        _lender = lender;
-        _repaymentPercent = repaymentPercent;
-        _repaymentAmount = repaymentAmount;
+        // _lender = lender;
+        // _repaymentPercent = repaymentPercent;
+        // _repaymentAmount = repaymentAmount;
 
         _host = host;
         _cfa = cfa;
@@ -100,7 +102,12 @@ contract RepaymentStream is Initializable, SuperAppBase {
     ) {
          int96 _netFlowRate = _cfa.getNetFlow(_acceptedToken, address(this));
 
-        (,int96 _lenderOutFlowRate,,) = _cfa.getFlow(_acceptedToken, address(this), _lender);
+        int96 _lenderOutFlowRate;
+        if (_lender == address(0)) {
+            _lenderOutFlowRate = 0;
+        } else {
+            (,_lenderOutFlowRate,,) = _cfa.getFlow(_acceptedToken, address(this), _lender);
+        }
         (,int96 _borrowerOutFlowRate,,) = _cfa.getFlow(_acceptedToken, address(this), _borrower);
 
         int96 _inFlowRate =  _netFlowRate + _lenderOutFlowRate + _borrowerOutFlowRate;
@@ -122,6 +129,9 @@ contract RepaymentStream is Initializable, SuperAppBase {
     function amountRepaid() public view returns (
         uint balance
     ) {
+        if (_lender == address(0)) {
+            return 0;
+        }
         (uint256 timestamp, int96 flowRate,,) = _cfa.getFlow(
             _acceptedToken,
             address(this),
@@ -130,11 +140,78 @@ contract RepaymentStream is Initializable, SuperAppBase {
         return uint(uint96(flowRate) * (block.timestamp - timestamp));
     }
 
+    function addLender(
+        address payable lender, 
+        int8 loanRepaymentPercent, 
+        uint loanRepaymentAmount          
+    ) external {
+        // for now this contract isn't reusable. one lender ever
+        require (_lender == address(0));
+
+        _lender = lender;
+        _repaymentPercent = loanRepaymentPercent;
+        _repaymentAmount = loanRepaymentAmount; 
+
+        // we've now added a lender, need to update the streams       
+        (int96 inFlowRate, int96 lenderOutFlowRate, int96 borrowerOutFlowRate) = getFlowRates();
+        
+        if (inFlowRate > 0) {
+            (int96 newLenderFlowRate, int96 newBorrowerFlowRate) = getNewRates(inFlowRate);
+
+            assert(newLenderFlowRate + newBorrowerFlowRate == inFlowRate);
+            
+            // update borrower
+            if (newBorrowerFlowRate > int96(0)) {
+                _host.callAgreement(
+                    _cfa,
+                    abi.encodeWithSelector(
+                        _cfa.updateFlow.selector,
+                        _acceptedToken,
+                        _borrower,
+                        newBorrowerFlowRate,
+                        new bytes(0)
+                    ),
+                    new bytes(0)
+                );   
+            } else {
+                _host.callAgreement(
+                    _cfa,
+                    abi.encodeWithSelector(
+                        _cfa.deleteFlow.selector,
+                        _acceptedToken,
+                        address(this),
+                        _borrower,
+                        new bytes(0)
+                    ),
+                    new bytes(0) 
+                );
+            }
+
+            // add lender
+            _host.callAgreement(
+                _cfa,
+                abi.encodeWithSelector(
+                    _cfa.createFlow.selector,
+                    _acceptedToken,
+                    _lender,
+                    newLenderFlowRate,
+                    new bytes(0) 
+                ),
+                new bytes(0)
+            );
+            
+        }
+    }
+
     function ceaseRepayment() external {
         // delete flow to lender, and set rate to borrower = 100%
-
+        require(!_repaid);
+        require(_lender != address(0));
         uint balance = amountRepaid();
         require(balance >= _repaymentAmount, "Full amount has not yet been repaid");
+
+        _repaid = true;
+
 
         (int96 inFlowRate,,) = getFlowRates();
 
@@ -173,79 +250,113 @@ contract RepaymentStream is Initializable, SuperAppBase {
         returns (bytes memory newCtx)
     {
         newCtx = ctx;
-        
+
         (int96 inFlowRate, int96 lenderOutFlowRate, int96 borrowerOutFlowRate) = getFlowRates();
 
-        
-        // STEP 1
-        // Delete the current flows to the borrower and lender.
-        if (borrowerOutFlowRate != int96(0)) {
-            // Delete borrower flow
-            (newCtx, ) = _host.callAgreementWithContext(
-                _cfa,
-                abi.encodeWithSelector(
-                    _cfa.deleteFlow.selector,
-                    _acceptedToken,
-                    address(this),
-                    _borrower,
-                    new bytes(0) // placeholder
-                ),
-                "0x",
-                newCtx
-            );
-        }
-        if (lenderOutFlowRate != int96(0)) {
-            // Delete lender flow
-            (newCtx, ) = _host.callAgreementWithContext(
-                _cfa,
-                abi.encodeWithSelector(
-                    _cfa.deleteFlow.selector,
-                    _acceptedToken,
-                    address(this),
-                    _lender,
-                    new bytes(0) // placeholder
-                ),
-                "0x",
-                newCtx
-            );        
-        }
+        // with no lender, we just update or create the borrower
+        if (_lender == address(0)) {
+            if (borrowerOutFlowRate != int96(0)) {
+                // Delete borrower flow
+                (newCtx, ) = _host.callAgreementWithContext(
+                    _cfa,
+                    abi.encodeWithSelector(
+                        _cfa.deleteFlow.selector,
+                        _acceptedToken,
+                        address(this),
+                        _borrower,
+                        new bytes(0) 
+                    ),
+                    "0x",
+                    newCtx
+                );
+            }
 
-        // STEP 2
-        // Calculate the new flow rates for borrower and lender.
-        if (inFlowRate > 0) {
-            (int96 newLenderFlowRate, int96 newBorrowerFlowRate) = getNewRates(inFlowRate);
-
-            assert(newLenderFlowRate + newBorrowerFlowRate == inFlowRate);
-            
             (newCtx, ) = _host.callAgreementWithContext(
                 _cfa,
                 abi.encodeWithSelector(
                     _cfa.createFlow.selector,
                     _acceptedToken,
-                    _lender,
-                    newLenderFlowRate,
-                    new bytes(0) // placeholder
+                    _borrower,
+                    inFlowRate,
+                    new bytes(0) 
                 ),
                 "0x",
                 newCtx
-            );
+            );  
+
+
+
+        } else {
             
-            if (newBorrowerFlowRate > int96(0)) {
+            // STEP 1
+            // Delete the current flows to the borrower and lender.
+            if (borrowerOutFlowRate != int96(0)) {
+                // Delete borrower flow
+                (newCtx, ) = _host.callAgreementWithContext(
+                    _cfa,
+                    abi.encodeWithSelector(
+                        _cfa.deleteFlow.selector,
+                        _acceptedToken,
+                        address(this),
+                        _borrower,
+                        new bytes(0) // placeholder
+                    ),
+                    "0x",
+                    newCtx
+                );
+            }
+            if (lenderOutFlowRate != int96(0)) {
+                // Delete lender flow
+                (newCtx, ) = _host.callAgreementWithContext(
+                    _cfa,
+                    abi.encodeWithSelector(
+                        _cfa.deleteFlow.selector,
+                        _acceptedToken,
+                        address(this),
+                        _lender,
+                        new bytes(0) // placeholder
+                    ),
+                    "0x",
+                    newCtx
+                );        
+            }
+
+            // STEP 2
+            // Calculate the new flow rates for borrower and lender.
+            if (inFlowRate > 0) {
+                (int96 newLenderFlowRate, int96 newBorrowerFlowRate) = getNewRates(inFlowRate);
+
+                assert(newLenderFlowRate + newBorrowerFlowRate == inFlowRate);
+                
                 (newCtx, ) = _host.callAgreementWithContext(
                     _cfa,
                     abi.encodeWithSelector(
                         _cfa.createFlow.selector,
                         _acceptedToken,
-                        _borrower,
-                        newBorrowerFlowRate,
+                        _lender,
+                        newLenderFlowRate,
                         new bytes(0) // placeholder
                     ),
                     "0x",
                     newCtx
-                );   
+                );
+                
+                if (newBorrowerFlowRate > int96(0)) {
+                    (newCtx, ) = _host.callAgreementWithContext(
+                        _cfa,
+                        abi.encodeWithSelector(
+                            _cfa.createFlow.selector,
+                            _acceptedToken,
+                            _borrower,
+                            newBorrowerFlowRate,
+                            new bytes(0) // placeholder
+                        ),
+                        "0x",
+                        newCtx
+                    );   
+                }
             }
         }
-
     }
 
 

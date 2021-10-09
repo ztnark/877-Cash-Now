@@ -7,7 +7,7 @@ import {RepaymentStream, ISuperToken, IConstantFlowAgreementV1, ISuperfluid } fr
 
 contract LoanRepaymentRegistry {
     mapping(address => address[]) public borrowerContracts;
-    mapping(address => address[]) public lenderContracts;
+    // mapping(address => address[]) public lenderContracts;
     
     address[] public allContracts;
 
@@ -25,24 +25,24 @@ contract LoanRepaymentRegistry {
         );
     }
 
-    function register (address _stream, address _borrower, address _lender) internal {
+    function register (address _stream, address _borrower/*, address _lender*/) internal {
         borrowerContracts[_borrower].push(_stream);
-        lenderContracts[_lender].push(_stream);
+        // lenderContracts[_lender].push(_stream);
         allContracts.push(_stream);
     }
 
     function createRepaymentStream(
-        address payable borrower,
-        address payable lender, 
-        int8 loanRepaymentPercent, 
-        uint loanRepaymentAmount        
+        address payable borrower
+        // address payable lender, 
+        // int8 loanRepaymentPercent, 
+        // uint loanRepaymentAmount        
     ) external returns (address) {
         address clone = Clones.clone(implementation);
         RepaymentStream(clone).initialize(
             borrower, 
-            lender, 
-            loanRepaymentPercent, 
-            loanRepaymentAmount, 
+            // lender, 
+            // loanRepaymentPercent, 
+            // loanRepaymentAmount, 
             ISuperfluid(0x22ff293e14F1EC3A09B137e9e06084AFd63adDF9), 
             IConstantFlowAgreementV1(0xEd6BcbF6907D4feEEe8a8875543249bEa9D308E8), 
             ISuperToken(0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00)
@@ -51,7 +51,7 @@ contract LoanRepaymentRegistry {
             // "0xF2d68898557cCb2Cf4C10c3Ef2B034b2a69DAD00" // goerli fdaiX
         );
 
-        register(clone, borrower, lender);
+        register(clone, borrower);
     }
 
     
@@ -59,9 +59,9 @@ contract LoanRepaymentRegistry {
         return borrowerContracts[borrower];
     }
 
-    function getContractsForLender(address lender) external view returns( address [] memory){
-        return lenderContracts[lender];
-    }
+    // function getContractsForLender(address lender) external view returns( address [] memory){
+    //     return lenderContracts[lender];
+    // }
 
     function getAllContracts() external view returns( address [] memory){
         return allContracts;

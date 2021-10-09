@@ -22,11 +22,11 @@ export default function useCustomContractLoader(provider, contractName, address)
 
           // this is outdated with the way scaffold-eth deploys abis.. needed to add abi manually
           const customContract = new Contract(address, require(`../contracts/${contractName}.abi.js`), signer);
-          try {
-            customContract.bytecode = require(`../contracts/${contractName}.bytecode.js`);
-          } catch (e) {
-            console.log(e);
-          }
+          // try {
+          //   customContract.bytecode = require(`../contracts/${contractName}.bytecode.js`);
+          // } catch (e) {
+          //   console.log(e);
+          // }
 
           setContract(customContract);
         } catch (e) {

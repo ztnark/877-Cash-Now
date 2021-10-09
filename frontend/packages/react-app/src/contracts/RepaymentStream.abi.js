@@ -32,6 +32,19 @@ module.exports = [
   },
   {
     "inputs": [],
+    "name": "_repaid",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "_repaymentAmount",
     "outputs": [
       {
@@ -54,6 +67,29 @@ module.exports = [
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address payable",
+        "name": "lender",
+        "type": "address"
+      },
+      {
+        "internalType": "int8",
+        "name": "loanRepaymentPercent",
+        "type": "int8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "loanRepaymentAmount",
+        "type": "uint256"
+      }
+    ],
+    "name": "addLender",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -401,21 +437,6 @@ module.exports = [
         "internalType": "address",
         "name": "borrower",
         "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "lender",
-        "type": "address"
-      },
-      {
-        "internalType": "int8",
-        "name": "repaymentPercent",
-        "type": "int8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "repaymentAmount",
-        "type": "uint256"
       },
       {
         "internalType": "contract ISuperfluid",

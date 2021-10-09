@@ -1,1 +1,1 @@
-export { default as ExampleUI } from "./ExampleUI";
+export { default as Dashboard } from "./Dashboard";
